@@ -14,14 +14,13 @@
             color: white;
             margin: 0;
             padding: 0;
-            height: 100vh; /* Full viewport height */
+            height: 100vh;
             width: 100vw;
-            overflow: hidden; /* Prevent scrolling of the page itself */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        /* --- Fullscreen Video Background --- */
         .video-container {
             position: absolute;
             top: 0;
@@ -38,8 +37,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            transform: scaleX(-1); /* Mirror effect */
-            object-fit: cover; /* Fill screen on mobile */
+            transform: scaleX(-1);
+            object-fit: cover;
         }
 
         canvas {
@@ -49,10 +48,9 @@
             width: 100%;
             height: 100%;
             transform: scaleX(-1);
-            object-fit: cover; /* Must match video object-fit */
+            object-fit: cover;
         }
 
-        /* --- UI Overlay (Sits on top of video) --- */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -60,13 +58,12 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass through to video/canvas if needed */
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
 
-        /* Header Gradient */
         .header {
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
             padding: 1.5rem 1rem 3rem 1rem;
@@ -74,10 +71,9 @@
             pointer-events: auto;
         }
 
-        /* Footer/Controls Gradient */
         .controls-wrapper {
             background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
-            padding: 2rem 0 2.5rem 0; /* Extra padding at bottom for modern phones */
+            padding: 2rem 0 2.5rem 0;
             pointer-events: auto;
             width: 100%;
         }
@@ -88,19 +84,19 @@
             padding: 0 1.5rem;
             overflow-x: auto;
             justify-content: flex-start;
-            scrollbar-width: none; /* Hide scrollbar Firefox */
-            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
         
         .controls::-webkit-scrollbar {
-            display: none; /* Hide scrollbar Chrome */
+            display: none;
         }
 
         .filter-btn {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(8px);
             border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%; /* Circular buttons look better on mobile */
+            border-radius: 50%;
             width: 64px;
             height: 64px;
             min-width: 64px;
@@ -156,7 +152,6 @@
 
         .loaded .loader { display: none; }
         
-        /* Helper text hidden on small mobile screens to save space */
         .desktop-hint {
             display: none;
         }
@@ -167,16 +162,12 @@
 </head>
 <body>
 
-    <!-- VIDEO LAYER -->
     <div class="video-container" id="container">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="output_canvas"></canvas>
     </div>
 
-    <!-- UI LAYER -->
     <div class="ui-layer">
-        
-        <!-- Header -->
         <div class="header">
             <h1 class="text-2xl font-bold text-white tracking-tight drop-shadow-md">
                 Face Filter Studio
@@ -184,17 +175,13 @@
             <p class="text-xs text-slate-300 desktop-hint mt-1">Select a mask below</p>
         </div>
 
-        <!-- Loader (Centered) -->
         <div class="loader">
             <div class="spinner"></div>
             <p class="text-sm font-bold tracking-wide text-white">INITIALIZING AI...</p>
         </div>
 
-        <!-- Controls (Bottom) -->
         <div class="controls-wrapper">
-            <div class="controls" id="controls-container">
-                <!-- Buttons injected by JS -->
-            </div>
+            <div class="controls" id="controls-container"></div>
         </div>
     </div>
 
@@ -217,117 +204,86 @@
         let results = undefined;
         let currentMask = null;
 
-        // --- MASK ASSETS ---
+        // --- ASSETS (With Anchor Points) ---
         const assets = {
             none: { icon: "🚫", name: "None" },
-            
-            // 1. Sunglasses
             sunglasses: {
-                name: "Shades", icon: "😎",
+                name: "Shades", icon: "😎", anchor: 'eyes',
                 src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgMjAwIj48cGF0aCBkPSJNNDAsNjAgQzQwLDYwIDE1MCw2MCAxODAsMTAwIEMxOTAsMTE1IDE5MCwxNDAgMTgwLDE2MCBDMTUwLDE4MCA4MCwxODAgNTAsMTYwIEMyMCwxNDAgMjAsMTE1IDMwLDEwMCBaIiBmaWxsPSJibGFjayIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjUiLz48cGF0aCBkPSJNMjYwLDYwIEMyNjAsNjAgMzcwLDYwIDQwMCwxMDAgQzQxMCwxMTUgNDEwLDE0MCA0MDAsMTYwIEMzNzAsMTgwIDMwMCwxODAgMjcwLDE2MCBDMjQwLDE0MCAyNDAsMTE1IDI1MCwxMDAgWiIgZmlsbD0iYmxhY2siIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSI1Ii8+PHBhdGggZD0iTTE4MCw4MCBDMjAwLDcwIDI0MCw3MCAyNjAsODAiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSI4IiBmaWxsPSJub25lIi8+PC9zdmc+`,
-                scale: 2.1, offsetY: -0.1
+                scale: 2.1, offsetY: 0.1
             },
-            
-            // 2. Hero
             hero: {
-                name: "Hero", icon: "🦸",
+                name: "Hero", icon: "🦸", anchor: 'eyes',
                 src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgMjUwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwMzA4RjtzdG9wLW9wYWNpdHk6MSIgLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDkwRkY7c3RvcC1vcGFjaXR5OjEiIC8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHBhdGggZD0iTTI1MCw1MCBDMzAwLDIwIDQ1MCwwIDQ4MCw4MCBDNDkwLDEyMCA0NTAsMTgwIDM1MCwxNjAgQzMwMCwxNTAgMjgwLDEyMCAyNTAsMTIwIEMyMjAsMTIwIDIwMCwxNTAgMTUwLDE2MCBDNTAsMTgwIDEwLDEyMCAyMCw4MCBDNTAsMCAyMDAsMjAgMjUwLDUwIFoiIGZpbGw9InVybCgjZ3JhZDEpIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiLz48ZWxsaXBzZSBjeD0iMTMwIiBjeT0iMTAwIiByeD0iNDAiIHJ5PSIyNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOCIvPjxlbGxpcHNlIGN4PSIzNzAiIGN5PSIxMDAiIHJ4PSI0MCIgcnk9IjI1IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC44Ii8+PC9zdmc+`,
-                scale: 2.4, offsetY: -0.5
+                scale: 2.4, offsetY: 0
             },
-            
-            // 3. Cat Ears
+            pixel: {
+                name: "Pixel", icon: "👾", anchor: 'eyes',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMTAwIj48cGF0aCBkPSJNMjAsMjAgSDM4MCBWMzAgSDM2MCBWNDAgSDM0MCBWNjAgSDMyMCBWODAgSDI4MCBWNjAgSDIyMCBWNDAgSDE4MCBWNjAgSDEyMCBWODAgSDgwIFY2MCBINCBSNDAgSDIwIFYzMCBIME0gVjIwIFoiIGZpbGw9ImJsYWNrIiAvPjxyZWN0IHg9IjUwIiB5PSIyNSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjEwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC41Ii8+PHJlY3QgeD0iMzA1IiB5PSIyNSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjEwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC41Ii8+PC9zdmc+`,
+                scale: 2.2, offsetY: 0.1
+            },
+            cyclops: {
+                name: "Cyclops", icon: "🤖", anchor: 'eyes',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cmVjdCB4PSIyMCIgeT0iNTAiIHdpZHRoPSIzNjAiIGhlaWdodD0iMTAwIiByeD0iMjAiIGZpbGw9IiMzMzMiIHN0cm9rZT0ic2lsdmVyIiBzdHJva2Utd2lkdGg9IjEwIi8+PHJlY3QgeD0iNTAiIHk9IjgwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwIiBmaWxsPSJyZWQiIHN0eWxlPSJmaWx0ZXI6ZHJvcC1zaGFkb3coMCAwIDEwcHggcmVkKTsiLz48L3N2Zz4=`,
+                scale: 2.2, offsetY: 0.1
+            },
+            pirate: {
+                name: "Pirate", icon: "🏴‍☠️", anchor: 'eyes',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMzAsMTAgTDM1MCwxODAiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI2MCIgZmlsbD0iYmxhY2siLz48cGF0aCBkPSJNMTAwLDYwIEw5MCw4MCBMMTEwLDgwIFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTkwLDkwIEwxMTAsOTAgTDEwMCwxMjAgWiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=`,
+                scale: 2.0, offsetY: 0
+            },
             cat: {
-                name: "Cat", icon: "🐱",
+                name: "Cat", icon: "🐱", anchor: 'forehead',
                 src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMzAsMTkwIEw5MCwxMCBMMTUwLDE5MCBaIiBmaWxsPSIjMzMyMjIyIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjUiLz48cGF0aCBkPSJNNjAsMTYwIEw5MCw2MCBMMTIwLDE2MCBaIiBmaWxsPSIjZmY5OWZmIiAvPjxwYXRoIGQ9Ik0yNTAsMTkwIEwzMTAsMTAgTDM3MCwxOTAgWiIgZmlsbD0iIzMzMjIyMiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSI1Ii8+PHBhdGggZD0iTTI4MCwxNjAgTDMxMCw2MCBMMzQwLDE2MCBaIiBmaWxsPSIjZmY5OWZmIiAvPjwvc3ZnPg==`,
+                scale: 2.5, offsetY: -1.0
+            },
+            crown: {
+                name: "Royal", icon: "👑", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjUwIj48cGF0aCBkPSJNMjAsMjAgTDUwLDEwMCBMMTIwLDE4MCBMMjAwLDUwIEwyODAsMTgwIEwzNTAsMTAwIEwzODAsMjMwIFoiIGZpbGw9IiNGRkQzMDAiIHN0cm9rZT0iI0M3OTgwMCIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGNpcmNsZSBjeD0iNTAiIGN5PSIxMDAiIHI9IjE1IiBmaWxsPSJyZWQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSI1MCIgcj0iMTUiIGZpbGw9ImJsdWUiLz48Y2lyY2xlIGN4PSIzNTAiIGN5PSIxMDAiIHI9IjE1IiBmaWxsPSJyZWQiLz48L3N2Zz4=`,
+                scale: 2.5, offsetY: -1.2
+            },
+            viking: {
+                name: "Viking", icon: "⚔️", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjUwIj48cGF0aCBkPSJNODAsMTUwIEwwLDUwIEw1MCwxMjAgWiIgZmlsbD0id2hpdGUiIHN0cm9rZT0iIzg4OCIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTMyMCwxNTAgTDQwMCw1MCBMMzUwLDEyMCBaIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjODg4IiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNNTAsMTUwIEUzNTAsMTUwIEwzNTAsMjAwIEw1MCwyMDAgWiIgZmlsbD0iIzU1NSIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjUiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMjAiIHI9IjgwIiBmaWxsPSIjNzc3IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNSIvPjwvc3ZnPg==`,
+                scale: 2.8, offsetY: -1.1
+            },
+            tophat: {
+                name: "Sir", icon: "🎩", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cmVjdCB4PSI4MCIgeT0iNTAiIHdpZHRoPSIyNDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMTAxMDEwIi8+PHJlY3QgeD0iMCIgeT0iMjUwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMTAxMDEwIi8+PHJlY3QgeD0iODAiIHk9IjIwMCIgd2lkdGg9IjI0MCIgaGVpZ2h0PSI1MCIgZmlsbD0iI2MzMDAwMCIvPjwvc3ZnPg==`,
+                scale: 3.0, offsetY: -1.3
+            },
+            tiara: {
+                name: "Tiara", icon: "💎", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMzAsMTgwIFEyMDAsMTMwIDM3MCwxODAgTDM1MCw4MCBMMzAwLDE1MCBMMjAwLDUwIEwxMDAsMTUwIEw1MCw4MCBaIiBmaWxsPSJub25lIiBzdHJva2U9InNpbHZlciIgc3Ryb2tlLXdpZHRoPSI4Ii8+PGNpcmNsZSBjeD0iMjAwIiBjeT0iNTAiIHI9IjE1IiBmaWxsPSJjeWFuIiBzdHJva2U9IndoaXRlIi8+PC9zdmc+`,
+                scale: 2.3, offsetY: -1.0
+            },
+            bunny: {
+                name: "Bunny", icon: "🐰", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIj48ZWxsaXBzZSBjeD0iMTAwIiBjeT0iMTUwIiByeD0iNTAiIHJ5PSIxNTAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNGRUVFRUUiIHN0cm9rZS13aWR0aD0iNSIvPjxlbGxpcHNlIGN4PSIxMDAiIGN5PSIxNTAiIHJ4PSIyMCIgcnk9IjEwMCIgZmlsbD0icGluayIvPjxlbGxpcHNlIGN4PSIzMDAiIGN5PSIxNTAiIHJ4PSI1MCIgcnk9IjE1MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI0ZFRUVFRSIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGVsbGlwc2UgY3g9IjMwMCIgY3k9IjE1MCIgcng9IjIwIiByeT0iMTAwIiBmaWxsPSJwaW5rIi8+PC9zdmc+`,
                 scale: 2.5, offsetY: -1.3
             },
-
-            // 4. Pixel Glasses
-            pixel: {
-                name: "Pixel", icon: "👾",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMTAwIj48cGF0aCBkPSJNMjAsMjAgSDM4MCBWMzAgSDM2MCBWNDAgSDM0MCBWNjAgSDMyMCBWODAgSDI4MCBWNjAgSDIyMCBWNDAgSDE4MCBWNjAgSDEyMCBWODAgSDgwIFY2MCBINCBSNDAgSDIwIFYzMCBIME0gVjIwIFoiIGZpbGw9ImJsYWNrIiAvPjxyZWN0IHg9IjUwIiB5PSIyNSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjEwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC41Ii8+PHJlY3QgeD0iMzA1IiB5PSIyNSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjEwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC41Ii8+PC9zdmc+`,
-                scale: 2.2, offsetY: -0.2
+            dog: {
+                name: "Dog", icon: "🐶", anchor: 'forehead',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cGF0aCBkPSJNMzAsMzAgQzEwLDYwIDEwLDE1MCA1MCwyMDAgQzgwLDIzMCAxMjAsMjAwIDEwMCwxNTAgQzkwLDEwMCA2MCw1MCAzMCwzMCBaIiBmaWxsPSIjOEI0NTEzIi8+PHBhdGggZD0iTTM3MCwzMCBDMzkwLDYwIDM5MCwxNTAgMzUwLDIwMCBDMzIwLDIzMCAyODAsMjAwIDMwMCwxNTAgQzMxMCwxMDAgMzQwLDUwIDM3MCwzMCBaIiBmaWxsPSIjOEI0NTEzIi8+PHBhdGggZD0iTTE2MCwxODAgQzE4MCwxNzAgMjIwLDE3MCAyNDAsMTgwIEMyNTAsMjAwIDIwMCwyMzAgMTUwLDIwMCBDMTQwLDE5MCAxNTAsMTg1IDE2MCwxODAgWiIgZmlsbD0iIzMwMjAxMCIvPjwvc3ZnPg==`,
+                scale: 2.5, offsetY: -0.6
             },
-
-            // 5. Crown
-            crown: {
-                name: "Royal", icon: "👑",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjUwIj48cGF0aCBkPSJNMjAsMjAgTDUwLDEwMCBMMTIwLDE4MCBMMjAwLDUwIEwyODAsMTgwIEwzNTAsMTAwIEwzODAsMjMwIFoiIGZpbGw9IiNGRkQzMDAiIHN0cm9rZT0iI0M3OTgwMCIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGNpcmNsZSBjeD0iNTAiIGN5PSIxMDAiIHI9IjE1IiBmaWxsPSJyZWQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSI1MCIgcj0iMTUiIGZpbGw9ImJsdWUiLz48Y2lyY2xlIGN4PSIzNTAiIGN5PSIxMDAiIHI9IjE1IiBmaWxsPSJyZWQiLz48L3N2Zz4=`,
-                scale: 2.5, offsetY: -1.5
-            },
-
-            // 6. Viking
-            viking: {
-                name: "Viking", icon: "⚔️",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjUwIj48cGF0aCBkPSJNODAsMTUwIEwwLDUwIEw1MCwxMjAgWiIgZmlsbD0id2hpdGUiIHN0cm9rZT0iIzg4OCIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTMyMCwxNTAgTDQwMCw1MCBMMzUwLDEyMCBaIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjODg4IiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNNTAsMTUwIEUzNTAsMTUwIEwzNTAsMjAwIEw1MCwyMDAgWiIgZmlsbD0iIzU1NSIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjUiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMjAiIHI9IjgwIiBmaWxsPSIjNzc3IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNSIvPjwvc3ZnPg==`,
-                scale: 2.8, offsetY: -1.4
-            },
-
-            // 7. Top Hat
-            tophat: {
-                name: "Sir", icon: "🎩",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cmVjdCB4PSI4MCIgeT0iNTAiIHdpZHRoPSIyNDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMTAxMDEwIi8+PHJlY3QgeD0iMCIgeT0iMjUwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMTAxMDEwIi8+PHJlY3QgeD0iODAiIHk9IjIwMCIgd2lkdGg9IjI0MCIgaGVpZ2h0PSI1MCIgZmlsbD0iI2MzMDAwMCIvPjwvc3ZnPg==`,
-                scale: 3.0, offsetY: -1.6
-            },
-
-            // 8. Pirate Patch
-            pirate: {
-                name: "Pirate", icon: "🏴‍☠️",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMzAsMTAgTDM1MCwxODAiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI2MCIgZmlsbD0iYmxhY2siLz48cGF0aCBkPSJNMTAwLDYwIEw5MCw4MCBMMTEwLDgwIFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTkwLDkwIEwxMTAsOTAgTDEwMCwxMjAgWiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=`,
-                scale: 2.0, offsetY: -0.3
-            },
-
-            // 9. Beard
-            beard: {
-                name: "Beard", icon: "🧔",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cGF0aCBkPSJNODAsMjAgQzgwLDIwIDEyMCwxMjAgMjAwLDEyMCBDMjgwLDEyMCAzMjAsMjAgMzIwLDIwIEMzMjAsMjAgMzgwLDUwIDM4MCwxNTAgQzM4MCwyNTAgMjAwLDMwMCAyMDAsMzAwIEMyMDAsMzAwIDIwLDI1MCAyMCwxNTAgQzIwLDUwIDgwLDIwIDgwLDIwIFoiIGZpbGw9IiM1NDMyMTAiLz48L3N2Zz4=`,
-                scale: 1.8, offsetY: 0.5
-            },
-
-            // 10. Bunny Ears
-            bunny: {
-                name: "Bunny", icon: "🐰",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIj48ZWxsaXBzZSBjeD0iMTAwIiBjeT0iMTUwIiByeD0iNTAiIHJ5PSIxNTAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNGRUVFRUUiIHN0cm9rZS13aWR0aD0iNSIvPjxlbGxpcHNlIGN4PSIxMDAiIGN5PSIxNTAiIHJ4PSIyMCIgcnk9IjEwMCIgZmlsbD0icGluayIvPjxlbGxpcHNlIGN4PSIzMDAiIGN5PSIxNTAiIHJ4PSI1MCIgcnk9IjE1MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI0ZFRUVFRSIgc3Ryb2tlLXdpZHRoPSI1Ii8+PGVsbGlXBzZSBjeD0iMzAwIiBjeT0iMTUwIiByeD0iMjAiIHJ5PSIxMDAiIGZpbGw9InBpbmsiLz48L3N2Zz4=`,
-                scale: 2.5, offsetY: -1.5
-            },
-
-            // 11. Clown Nose
             clown: {
-                name: "Clown", icon: "🤡",
+                name: "Clown", icon: "🤡", anchor: 'nose',
                 src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9InNoaW5lIiBjeD0iMzAlIiBjeT0iMzAlIiByPSI1MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOndoaXRlO3N0b3Atb3BhY2l0eToxIiAvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGMDAwMDtzdG9wLW9wYWNpdHk6MCIgLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI0ZGMDAwMCIgc3Ryb2tlPSIjOTkwMDAwIiBzdHJva2Utd2lkdGg9IjIiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0idXJsKCNzaGluZSkiIC8+PC9zdmc+`,
                 scale: 0.8, offsetY: 0
             },
-            
-            // 12. Mustache
             mustache: {
-                name: "Stache", icon: "🥸",
+                name: "Stache", icon: "🥸", anchor: 'mouth',
                 src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMjAwLDUwIEMyMjAsNTAgMjQwLDgwIDI4MCw4MCBDMzQwLDgwIDM4MCw1MCAzODAsMjAgQzM5MCwxMCA0MDAsMzAgMzgwLDcwIEMzNDAsMTUwIDI1MCwxMjAgMjAwLDkwIEMxNTAsMTIwIDYwLDE1MCAyMCw3MCBDMCwzMCAxMCwxMCAyMCwyMCBDMjAsNTAgNjAsODAgMTIwLDgwIEMxNjAsODAgMTgwLDUwIDIwMCw1MCBaIiBmaWxsPSIjM2MyZjJmIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=`,
-                scale: 1.8, offsetY: 0.7
+                scale: 1.8, offsetY: 0.2
             },
-
-            // 13. Cyclops
-            cyclops: {
-                name: "Cyclops", icon: "🤖",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cmVjdCB4PSIyMCIgeT0iNTAiIHdpZHRoPSIzNjAiIGhlaWdodD0iMTAwIiByeD0iMjAiIGZpbGw9IiMzMzMiIHN0cm9rZT0ic2lsdmVyIiBzdHJva2Utd2lkdGg9IjEwIi8+PHJlY3QgeD0iNTAiIHk9IjgwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwIiBmaWxsPSJyZWQiIHN0eWxlPSJmaWx0ZXI6ZHJvcC1zaGFkb3coMCAwIDEwcHggcmVkKTsiLz48L3N2Zz4=`,
-                scale: 2.2, offsetY: -0.4
+            beard: {
+                name: "Beard", icon: "🧔", anchor: 'mouth',
+                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cGF0aCBkPSJNODAsMjAgQzgwLDIwIDEyMCwxMjAgMjAwLDEyMCBDMjgwLDEyMCAzMjAsMjAgMzIwLDIwIEMzMjAsMjAgMzgwLDUwIDM4MCwxNTAgQzM4MCwyNTAgMjAwLDMwMCAyMDAsMzAwIEMyMDAsMzAwIDIwLDI1MCAyMCwxNTAgQzIwLDUwIDgwLDIwIDgwLDIwIFoiIGZpbGw9IiM1NDMyMTAiLz48L3N2Zz4=`,
+                scale: 1.8, offsetY: 0.2
             },
-
-            // 14. Tiara
-            tiara: {
-                name: "Tiara", icon: "💎",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cGF0aCBkPSJNMzAsMTgwIFEyMDAsMTMwIDM3MCwxODAgTDM1MCw4MCBMMzAwLDE1MCBMMjAwLDUwIEwxMDAsMTUwIEw1MCw4MCBaIiBmaWxsPSJub25lIiBzdHJva2U9InNpbHZlciIgc3Ryb2tlLXdpZHRoPSI4Ii8+PGNpcmNsZSBjeD0iMjAwIiBjeT0iNTAiIHI9IjE1IiBmaWxsPSJjeWFuIiBzdHJva2U9IndoaXRlIi8+PC9zdmc+`,
-                scale: 2.3, offsetY: -1.2
-            },
-
-            // 15. Dog Ears
-            dog: {
-                name: "Dog", icon: "🐶",
-                src: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIj48cGF0aCBkPSJNMzAsMzAgQzEwLDYwIDEwLDE1MCA1MCwyMDAgQzgwLDIzMCAxMjAsMjAwIDEwMCwxNTAgQzkwLDEwMCA2MCw1MCAzMCwzMCBaIiBmaWxsPSIjOEI0NTEzIi8+PHBhdGggZD0iTTM3MCwzMCBDMzkwLDYwIDM5MCwxNTAgMzUwLDIwMCBDMzIwLDIzMCAyODAsMjAwIDMwMCwxNTAgQzMxMCwxMDAgMzQwLDUwIDM3MCwzMCBaIiBmaWxsPSIjOEI0NTEzIi8+PHBhdGggZD0iTTE2MCwxODAgQzE4MCwxNzAgMjIwLDE3MCAyNDAsMTgwIEMyNTAsMjAwIDIwMCwyMzAgMTUwLDIwMCBDMTQwLDE5MCAxNTAsMTg1IDE2MCwxODAgWiIgZmlsbD0iIzMwMjAxMCIvPjwvc3ZnPg==`,
-                scale: 2.5, offsetY: -0.8
-            }
         };
 
-        // Preload Images
         const loadedImages = {};
         for (const [key, asset] of Object.entries(assets)) {
             if (asset.src) {
@@ -336,8 +292,6 @@
                 loadedImages[key] = img;
             }
         }
-
-        // --- SETUP FUNCTIONS ---
 
         async function createFaceLandmarker() {
             const filesetResolver = await FilesetResolver.forVisionTasks(
@@ -353,17 +307,15 @@
                 numFaces: 1
             });
             
-            // UI Update: Hide loader
             document.body.classList.add('loaded');
             setupUI();
         }
 
         function setupUI() {
-            // Create Filter Buttons
             Object.keys(assets).forEach(key => {
                 const btn = document.createElement('div');
                 btn.className = `filter-btn ${key === 'none' ? 'active' : ''}`;
-                btn.innerHTML = `<span>${assets[key].icon}</span>`; // Removed name for cleaner mobile look
+                btn.innerHTML = `<span>${assets[key].icon}</span>`;
                 btn.onclick = () => {
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
@@ -376,7 +328,6 @@
         }
 
         function startCamera() {
-            // 'ideal: environment' or 'user'. user is front facing.
             const constraints = { 
                 video: { 
                     facingMode: "user",
@@ -395,7 +346,6 @@
             const width = video.videoWidth;
             const height = video.videoHeight;
             
-            // Ensure canvas resolution matches video resolution for correct coordinate mapping
             if (canvasElement.width !== width || canvasElement.height !== height) {
                 canvasElement.width = width;
                 canvasElement.height = height;
@@ -427,19 +377,36 @@
 
             const leftCheek = landmarks[234];
             const rightCheek = landmarks[454];
-            const noseTip = landmarks[1];
             const forehead = landmarks[10];
             const chin = landmarks[152];
+            
+            let anchorPoint;
+            if (config.anchor === 'eyes') anchorPoint = landmarks[168]; 
+            else if (config.anchor === 'forehead') anchorPoint = landmarks[10];
+            else if (config.anchor === 'mouth') anchorPoint = landmarks[164];
+            else anchorPoint = landmarks[1];
 
+            // --- STABLE SCALING LOGIC ---
+            // 1. Calculate Face Height (Forehead to Chin) - Stable during rotation
+            const faceHeight = Math.hypot(
+                (forehead.x - chin.x) * w,
+                (forehead.y - chin.y) * h
+            );
+            
+            // 2. Calculate Face Width (Cheek to Cheek) - Shrinks when turning
             const faceWidth = Math.hypot(
                 (leftCheek.x - rightCheek.x) * w,
                 (leftCheek.y - rightCheek.y) * h
             );
 
-            const faceHeight = Math.hypot(
-                (forehead.x - chin.x) * w,
-                (forehead.y - chin.y) * h
-            );
+            // 3. Create a "Synthetic Width" based on Height
+            // On average, a frontal face width is about 75% of its height.
+            const stableWidth = faceHeight * 0.75;
+
+            // 4. Use the LARGER of the two. 
+            // If looking front: faceWidth is normal.
+            // If turning side: faceWidth shrinks, so we switch to stableWidth.
+            const sizingMetric = Math.max(faceWidth, stableWidth);
 
             const dx = (rightCheek.x - leftCheek.x);
             const dy = (rightCheek.y - leftCheek.y);
@@ -447,13 +414,14 @@
 
             canvasCtx.save();
             
-            const cx = noseTip.x * w;
-            const cy = (noseTip.y * h) + (faceHeight * config.offsetY);
+            const cx = anchorPoint.x * w;
+            const cy = (anchorPoint.y * h) + (faceHeight * config.offsetY);
 
             canvasCtx.translate(cx, cy);
             canvasCtx.rotate(angle);
 
-            const imgW = faceWidth * config.scale;
+            // Use the new Sizing Metric
+            const imgW = sizingMetric * config.scale;
             const imgH = imgW * (img.height / img.width);
 
             canvasCtx.drawImage(img, -imgW / 2, -imgH / 2, imgW, imgH);
